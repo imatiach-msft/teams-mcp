@@ -1,0 +1,37 @@
+{
+  "name": "@imatiach-msft/teams-mcp",
+  "version": "1.0.0",
+  "description": "Secure Microsoft Teams MCP server using official Microsoft packages",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "teams-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "auth": "tsx src/auth.ts"
+  },
+  "keywords": [
+    "mcp",
+    "teams",
+    "microsoft",
+    "graph"
+  ],
+  "author": "imatiach-msft",
+  "license": "MIT",
+  "dependencies": {
+    "@azure/identity": "^4.5.0",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

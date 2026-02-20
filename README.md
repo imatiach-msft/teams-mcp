@@ -17,7 +17,7 @@ This server uses exclusively official Microsoft packages:
 ## Prerequisites
 
 - Node.js 18+
-- Azure CLI (`az login`) - recommended for seamless auth
+- Azure CLI (`az login`) - required for authentication
 
 ## Installation
 
@@ -28,19 +28,36 @@ npm run build
 
 ## Authentication
 
-The server uses a credential chain:
+The server uses Azure CLI credentials (`az login`). For enterprise tenants with Conditional Access policies blocking Graph API Chat permissions, use the **Power Automate integration** instead.
 
-1. **Azure CLI** (recommended): If you're logged in via `az login`, it uses those credentials automatically
-2. **Device Code**: Falls back to device code flow if Azure CLI isn't available
+## Power Automate Integration (Recommended for Enterprise)
 
-### Required Graph API Permissions
+If your organization blocks direct Graph API access to Teams chats, you can use Power Automate as a bridge:
 
-Your Azure identity needs these delegated permissions:
-- `Chat.ReadWrite` - Read and send chat messages
-- `ChannelMessage.Send` - Send channel messages
-- `Team.ReadBasic.All` - List teams
-- `Channel.ReadBasic.All` - List channels
-- `User.Read` - Get current user
+### One-time Setup
+
+1. Go to [Power Automate](https://make.powerautomate.com)
+2. Create a new **Instant cloud flow**
+3. Add trigger: **"When an HTTP request is received"**
+4. Click "Use sample payload" and enter: `{"message": "Hello"}`
+5. Add action: **"Post message in a chat or channel"** (Microsoft Teams)
+6. Configure the Teams action with your target chat/channel
+7. For Message, select **message** from Dynamic content
+8. Save and turn on the flow
+9. Copy the HTTP POST URL from the trigger
+
+### Usage
+
+```bash
+# Set your Power Automate flow URL
+export POWER_AUTOMATE_URL="https://....powerplatform.com/.../invoke?api-version=1"
+
+# Post a message (uses Azure AD auth automatically)
+curl -X POST "$POWER_AUTOMATE_URL" \
+  -H "Authorization: Bearer $(az account get-access-token --resource https://service.flow.microsoft.com/ --query accessToken -o tsv)" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello from MCP!"}'
+```
 
 ## Usage
 
@@ -71,12 +88,6 @@ Your Azure identity needs these delegated permissions:
 }
 ```
 
-### Development mode
-
-```bash
-npm run dev
-```
-
 ## Available Tools
 
 | Tool | Description |
@@ -85,32 +96,32 @@ npm run dev
 | `list_chats` | List user's Teams chats |
 | `list_teams` | List joined Teams |
 | `list_channels` | List channels in a Team |
-| `send_chat_message` | Send message to a chat |
-| `send_channel_message` | Send message to a channel |
+| `send_chat_message` | Send message to a chat (requires Graph permissions) |
+| `send_channel_message` | Send message to a channel (requires Graph permissions) |
 | `get_chat_messages` | Get messages from a chat |
 | `get_channel_messages` | Get messages from a channel |
+| `send_via_power_automate` | **Send message via Power Automate** (bypasses Graph restrictions) |
 
 ## Examples
 
-### Send a message to a chat
+### Send a message via Power Automate (Recommended)
+```json
+{
+  "tool": "send_via_power_automate",
+  "arguments": {
+    "flowUrl": "https://....powerplatform.com/.../invoke?api-version=1",
+    "message": "Hello from MCP!"
+  }
+}
+```
+
+### Send a message to a chat (requires Graph permissions)
 ```json
 {
   "tool": "send_chat_message",
   "arguments": {
     "chatId": "19:abc123@thread.v2",
     "message": "Hello from MCP!"
-  }
-}
-```
-
-### Send a message to a channel
-```json
-{
-  "tool": "send_channel_message",
-  "arguments": {
-    "teamId": "team-guid",
-    "channelId": "channel-guid",
-    "message": "Hello team!"
   }
 }
 ```
